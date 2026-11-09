@@ -34,6 +34,23 @@ const DEFAULT_CATS = {
   custom: { ru: "Метки мастера", color: "#f5e663", icon: "fa-location-dot" }
 };
 const CATS = foundry.utils.deepClone(DEFAULT_CATS);
+
+function refreshCategories() {
+  const saved = game.settings.get(MID, "state")?.categories ?? {};
+
+  for (const key of Object.keys(CATS)) {
+    delete CATS[key];
+  }
+
+  Object.assign(CATS, foundry.utils.deepClone(DEFAULT_CATS));
+
+  for (const [id, category] of Object.entries(saved)) {
+    CATS[id] = {
+      ...(CATS[id] ?? {}),
+      ...category
+    };
+  }
+}
 const DANGER = ["Вода", "Корпоративная", "Умеренная", "Переполненные пригороды", "Боевая зона", "Зона Поражения"];
 const TRANSPORT = [
   { id: "foot", ru: "Пешком", kmh: 5, icon: "fa-person-walking" },
@@ -797,7 +814,8 @@ const UI = {
           <button data-act="mode-roads" title="${T("Сетка дорог для маршрутов: показать и дорисовать")}"><i class="fas fa-road"></i> ${T("Дороги")}</button>
           <button data-act="mode-geo" title="${T("Районы и подписи улиц: свои для своей карты")}"><i class="fas fa-signs-post"></i> ${T("Районы")}</button>
           <button data-act="places" title="${T("Места на карте: вернуть убранные, экспорт и импорт")}"><i class="fas fa-map-location-dot"></i> ${T("Места")}</button>
-          <button data-act="share" title="${T("Открыть карту у всех игроков на этом месте")}"><i class="fas fa-satellite-dish"></i> ${T("Показать всем")}</button>` : ""}
+          <button data-act="manage-categories" title="Manage map categories"><i class="fas fa-layer-group"></i> Categories</button>
+		  <button data-act="share" title="${T("Открыть карту у всех игроков на этом месте")}"><i class="fas fa-satellite-dish"></i> ${T("Показать всем")}</button>` : ""}
         </div>
         <div class="ncm-clock" title="${T("Время в Найт-Сити")}"></div>
         <button class="ncm-x" data-act="close" title="${T("Закрыть (Esc)")}"><i class="fas fa-xmark"></i></button>
@@ -1609,6 +1627,66 @@ const UI = {
     if (dist) return this.renderDistrict(dist.dataset.dist);
     if (this.sel) { this.sel = null; this.renderMarkers(); this.renderPanel(); }
   },
+  
+async manageCategories() {
+  if (!isGM()) return;
+
+  const categories = foundry.utils.deepClone(CATS);
+
+  const content = `
+    <div class="ncm-category-manager">
+      ${Object.entries(categories).map(([id, cat]) => `
+        <div class="form-group" style="display:grid;grid-template-columns:1fr 65px 140px;gap:8px;align-items:center;margin-bottom:10px">
+          <input type="text" data-cat-name="${id}" value="${cat.ru ?? id}" placeholder="Category name">
+          <input type="color" data-cat-color="${id}" value="${cat.color ?? "#ffffff"}">
+          <input type="text" data-cat-icon="${id}" value="${cat.icon ?? "fa-location-dot"}" placeholder="fa-icon">
+        </div>
+      `).join("")}
+      <hr>
+      <button type="button" data-cat-add><i class="fas fa-plus"></i> Add category</button>
+    </div>
+  `;
+
+  new Dialog({
+    title: "Manage map categories",
+    content,
+    buttons: {
+      save: {
+        label: "Save",
+        callback: async html => {
+          const updated = {};
+
+          html.find("[data-cat-name]").each((_, el) => {
+            const id = el.dataset.catName;
+            const name = el.value.trim();
+            const color = html.find(`[data-cat-color="${id}"]`).val();
+            const icon = html.find(`[data-cat-icon="${id}"]`).val().trim();
+
+            if (name) updated[id] = {
+              ru: name,
+              color,
+              icon
+            };
+          });
+
+          await save(s => {
+            s.categories = updated;
+          });
+
+          refreshCategories();
+          this.render();
+        }
+      },
+      cancel: { label: "Cancel" }
+    },
+    render: html => {
+      html.find("[data-cat-add]").on("click", () => {
+        ui.notifications.info("Adding new categories will be enabled in the next step.");
+      });
+    }
+  }).render(true);
+},
+
   async onClick(ev) {
     const dl = ev.target.closest(".ncm-dist");
     if (dl && this.mode === "browse") return this.renderDistrict(dl.dataset.dist);
@@ -1623,6 +1701,9 @@ const UI = {
     const id = b.dataset.id;
     switch (b.dataset.act) {
       case "close": return this.close();
+	  case "manage-categories":
+        if (!isGM()) return;
+        return this.manageCategories();
       case "zin": return this.zoomAt(1.3);
       case "zout": return this.zoomAt(1 / 1.3);
       case "fit": return this.fit();
@@ -2453,7 +2534,11 @@ function localizeData() {
   for (const d of BASE_DISTRICTS) { d._ru ??= { ru: d.ru, desc: d.desc }; d.ru = d.en || d.ru; d.desc = T(d._ru.desc); d.en = ""; }
   for (const st of BASE_STREETS) { st._ru ??= st.ru; st.ru = st.en || st.ru; }
 }
-Hooks.once("setup", () => { if (freezeLang() !== "ru") localizeData(); });
+Hooks.once("setup", () => {
+  refreshCategories();
+  UI.filter = new Set(Object.keys(CATS));
+  if (freezeLang() !== "ru") localizeData();
+});
 
 Hooks.once("ready", () => {
   game.socket.on(SOCKET, (d) => {
