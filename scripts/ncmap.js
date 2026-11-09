@@ -1629,6 +1629,7 @@ const UI = {
   },
   
 
+
 async manageCategories() {
   if (!isGM()) return;
 
@@ -1636,13 +1637,19 @@ async manageCategories() {
 
   const categoryRow = (id, cat = {}) => `
     <div class="form-group" data-category-row="${id}"
-      style="display:grid;grid-template-columns:1fr 65px 140px;gap:8px;align-items:center;margin-bottom:10px">
+      style="display:grid;grid-template-columns:1fr 65px 140px auto;gap:8px;align-items:center;margin-bottom:10px">
       <input type="text" data-cat-name="${id}"
         value="${esc(cat.ru ?? id)}" placeholder="Category name">
       <input type="color" data-cat-color="${id}"
         value="${cat.color ?? "#ffffff"}">
       <input type="text" data-cat-icon="${id}"
         value="${esc(cat.icon ?? "fa-location-dot")}" placeholder="fa-icon">
+      ${DEFAULT_CATS[id] ? "" : `
+        <button type="button" data-cat-delete="${id}"
+          title="Delete category">
+          <i class="fas fa-trash"></i>
+        </button>
+      `}
     </div>
   `;
 
@@ -1683,6 +1690,17 @@ async manageCategories() {
           });
 
           await save(s => {
+            const removed = Object.keys(categories).filter(
+              id => !DEFAULT_CATS[id] && !updated[id]
+            );
+
+            // Reassign pins before removing their categories.
+            for (const pin of s.pins) {
+              if (removed.includes(pin.cat)) {
+                pin.cat = "custom";
+              }
+            }
+
             s.categories = updated;
           });
 
@@ -1706,7 +1724,29 @@ async manageCategories() {
 
         html.find(".ncm-category-manager hr").before(row);
 
-        row.find(`[data-cat-name="${id}"]`).trigger("focus").trigger("select");
+        row.find(`[data-cat-name="${id}"]`)
+          .trigger("focus")
+          .trigger("select");
+      });
+
+      html.on("click", "[data-cat-delete]", async ev => {
+        ev.preventDefault();
+
+        const id = ev.currentTarget.dataset.catDelete;
+        if (!id || DEFAULT_CATS[id]) return;
+
+        const name = html.find(`[data-cat-name="${id}"]`).val();
+
+        const ok = await Dialog.confirm({
+          title: "Delete category",
+          content: `<p>Delete category "${esc(name)}"?</p>
+            <p>Existing pins using this category will be moved
+            to the default GM Pins category.</p>`
+        });
+
+        if (ok) {
+          html.find(`[data-category-row="${id}"]`).remove();
+        }
       });
     }
   }).render(true);
