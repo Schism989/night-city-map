@@ -1631,8 +1631,11 @@ const UI = {
 
 
 
+
 async manageCategories() {
   if (!isGM()) return;
+
+  const LOCKED_CATEGORIES = ["shop", "market", "custom"];
 
   const categories = foundry.utils.deepClone(CATS);
 
@@ -1663,9 +1666,10 @@ async manageCategories() {
 
   const content = `
     <div class="ncm-category-manager">
-      ${Object.entries(categories).map(([id, cat]) =>
-        categoryRow(id, cat)
-      ).join("")}
+      ${Object.entries(categories)
+        .filter(([id]) => !LOCKED_CATEGORIES.includes(id))
+        .map(([id, cat]) => categoryRow(id, cat))
+        .join("")}
       <hr>
       <button type="button" data-cat-add>
         <i class="fas fa-plus"></i> Add category
@@ -1681,6 +1685,13 @@ async manageCategories() {
         label: "Save",
         callback: async html => {
           const updated = {};
+
+          // Preserve protected categories exactly as they are.
+          for (const id of LOCKED_CATEGORIES) {
+            if (categories[id]) {
+              updated[id] = categories[id];
+            }
+          }
 
           html.find("[data-cat-name]").each((_, el) => {
             const id = el.dataset.catName;
@@ -1703,6 +1714,7 @@ async manageCategories() {
           await save(s => {
             const removed = Object.keys(categories).filter(
               id => !DEFAULT_CATS[id] && !updated[id]
+                && !LOCKED_CATEGORIES.includes(id)
             );
 
             for (const pin of s.pins) {
@@ -1749,7 +1761,8 @@ async manageCategories() {
         ev.preventDefault();
 
         const id = ev.currentTarget.dataset.catDelete;
-        if (!id || DEFAULT_CATS[id]) return;
+
+        if (!id || DEFAULT_CATS[id] || LOCKED_CATEGORIES.includes(id)) return;
 
         const name = html.find(`[data-cat-name="${id}"]`).val();
 
