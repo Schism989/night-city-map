@@ -21,9 +21,9 @@
     "styles/ncmap.css"
   ],
   "socket": true,
-  "url": "https://github.com/samroaleksej-bit/night-city-map",
-  "manifest": "https://github.com/samroaleksej-bit/night-city-map/releases/latest/download/module.json",
-  "download": "https://github.com/samroaleksej-bit/night-city-map/releases/download/v0.27.2/module.zip",
+  "url": "https://github.com/Schism989/night-city-map",
+  "manifest": "https://github.com/Schism989/night-city-map/releases/latest/download/module.json",
+  "download": "https://github.com/Schism989/night-city-map/releases/download/latest/module.zip",
   "packs": [
     {
       "name": "npc",
