@@ -34,10 +34,6 @@ const DEFAULT_CATS = {
   custom: { ru: "Метки мастера", color: "#f5e663", icon: "fa-location-dot" }
 };
 const CATS = foundry.utils.deepClone(DEFAULT_CATS);
-  custom: { ru: "Метки мастера", color: "#f5e663", icon: "fa-location-dot" }
-};
-
-const CATS = foundry.utils.deepClone(DEFAULT_CATS);
 const DANGER = ["Вода", "Корпоративная", "Умеренная", "Переполненные пригороды", "Боевая зона", "Зона Поражения"];
 const TRANSPORT = [
   { id: "foot", ru: "Пешком", kmh: 5, icon: "fa-person-walking" },
