@@ -340,7 +340,7 @@ const Ncart = {
       return this.files;
     }
     this.loading ??= (async () => {
-      const FP = foundry.applications?.apps?.FilePicker?.implementation ?? globalThis.FilePicker?.implementation ?? globalThis.FilePicker;
+      const FP = typeof FilePicker !== "undefined" ? FilePicker : null;
       const clean = dir.replace(/\/+$/, "");
       // источник берём из самого пути: data, public, s3, Forge — как его выбрал FilePicker
       const tries = [];
