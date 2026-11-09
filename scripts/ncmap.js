@@ -21,7 +21,7 @@ const isGM = () => !!game.user?.isGM;
 const rid = () => foundry.utils.randomID(10);
 const clone = (o) => foundry.utils.deepClone(o);
 
-const CATS = {
+const DEFAULT_CATS = {
   culture: { ru: "Культура и искусство", color: "#ff7a2f", icon: "fa-palette" },
   club: { ru: "Клубы и ночная жизнь", color: "#3d5bff", icon: "fa-music" },
   arts: { ru: "Шоу и спорт", color: "#c040e0", icon: "fa-film" },
@@ -33,6 +33,11 @@ const CATS = {
   market: { ru: "Ночные рынки", color: "#9b6bff", icon: "fa-moon" },
   custom: { ru: "Метки мастера", color: "#f5e663", icon: "fa-location-dot" }
 };
+const CATS = foundry.utils.deepClone(DEFAULT_CATS);
+  custom: { ru: "Метки мастера", color: "#f5e663", icon: "fa-location-dot" }
+};
+
+const CATS = foundry.utils.deepClone(DEFAULT_CATS);
 const DANGER = ["Вода", "Корпоративная", "Умеренная", "Переполненные пригороды", "Боевая зона", "Зона Поражения"];
 const TRANSPORT = [
   { id: "foot", ru: "Пешком", kmh: 5, icon: "fa-person-walking" },
@@ -44,7 +49,26 @@ const QSTATUS = { hidden: "Скрыт", offer: "Слух / предложени�
 
 /* ================================================================ настройки и состояние */
 
-const DEFAULT_STATE = { quests: [], pins: [], poi: {}, party: null, route: null, visited: [], shops: [], markets: [], night: false, clock: 0, players: {}, messages: [], contacts: [], encounters: [], encMode: "mix", roads: [], geo: { on: false, districts: [], streets: [] } };
+const DEFAULT_STATE = {
+  quests: [],
+  pins: [],
+  poi: {},
+  categories: {},
+  party: null,
+  route: null,
+  visited: [],
+  shops: [],
+  markets: [],
+  night: false,
+  clock: 0,
+  players: {},
+  messages: [],
+  contacts: [],
+  encounters: [],
+  encMode: "mix",
+  roads: [],
+  geo: { on: false, districts: [], streets: [] }
+};
 
 Hooks.once("init", () => {
   game.settings.register(MID, "lang", {
