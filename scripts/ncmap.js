@@ -44,7 +44,26 @@ const QSTATUS = { hidden: "Скрыт", offer: "Слух / предложени�
 
 /* ================================================================ настройки и состояние */
 
-const DEFAULT_STATE = { quests: [], pins: [], poi: {}, party: null, route: null, visited: [], shops: [], markets: [], night: false, clock: 0, players: {}, messages: [], contacts: [], encounters: [], encMode: "mix", roads: [], geo: { on: false, districts: [], streets: [] } };
+const DEFAULT_STATE = {
+  quests: [],
+  pins: [],
+  poi: {},
+  categories: {},
+  party: null,
+  route: null,
+  visited: [],
+  shops: [],
+  markets: [],
+  night: false,
+  clock: 0,
+  players: {},
+  messages: [],
+  contacts: [],
+  encounters: [],
+  encMode: "mix",
+  roads: [],
+  geo: { on: false, districts: [], streets: [] }
+};
 
 Hooks.once("init", () => {
   game.settings.register(MID, "lang", {
