@@ -820,7 +820,7 @@ const UI = {
         <div class="ncm-clock" title="${T("Время в Найт-Сити")}"></div>
         <button class="ncm-x" data-act="close" title="${T("Закрыть (Esc)")}"><i class="fas fa-xmark"></i></button>
       </header>
-      <nav class="ncm-cats">${Object.entries(CATS).map(([k, c]) => `<button data-cat="${k}" class="on" style="--c:${c.color}"><i class="fas ${c.icon}"></i>${c.ru}</button>`).join("")}</nav>
+      <nav class="ncm-cats">${Object.entries(CATS).filter(([k, c]) => !c.disabled).map(([k, c]) => `<button data-cat="${k}" class="on" style="--c:${c.color}"><i class="fas ${c.icon}"></i>${c.ru}</button>`).join("")}</nav>
       <div class="ncm-viewport">
         <div class="ncm-world">
           <img class="ncm-img" src="${esc(mapImage())}" alt="" draggable="false">
@@ -1630,6 +1630,7 @@ const UI = {
   
 
 
+
 async manageCategories() {
   if (!isGM()) return;
 
@@ -1644,7 +1645,14 @@ async manageCategories() {
         value="${cat.color ?? "#ffffff"}">
       <input type="text" data-cat-icon="${id}"
         value="${esc(cat.icon ?? "fa-location-dot")}" placeholder="fa-icon">
-      ${DEFAULT_CATS[id] ? "" : `
+
+      ${DEFAULT_CATS[id] ? `
+        <label style="white-space:nowrap;font-size:11px">
+          <input type="checkbox" data-cat-disabled="${id}"
+            ${cat.disabled ? "" : "checked"}>
+          Enabled
+        </label>
+      ` : `
         <button type="button" data-cat-delete="${id}"
           title="Delete category">
           <i class="fas fa-trash"></i>
@@ -1684,7 +1692,10 @@ async manageCategories() {
               updated[id] = {
                 ru: name,
                 color,
-                icon: icon || "fa-location-dot"
+                icon: icon || "fa-location-dot",
+                disabled: DEFAULT_CATS[id]
+                  ? !html.find(`[data-cat-disabled="${id}"]`).prop("checked")
+                  : false
               };
             }
           });
@@ -1694,7 +1705,6 @@ async manageCategories() {
               id => !DEFAULT_CATS[id] && !updated[id]
             );
 
-            // Reassign pins before removing their categories.
             for (const pin of s.pins) {
               if (removed.includes(pin.cat)) {
                 pin.cat = "custom";
@@ -1705,6 +1715,12 @@ async manageCategories() {
           });
 
           refreshCategories();
+
+          // Keep existing pins visible even when their category is disabled.
+          for (const [id, cat] of Object.entries(CATS)) {
+            if (cat.disabled) this.filter.add(id);
+          }
+
           this.render();
         }
       },
@@ -2405,7 +2421,10 @@ async function importData() {
 
 /** Своя точка мастера: категория, описание, картинка для досье, защита от удаления. */
 function pinDialog(title, p = {}, { base = false } = {}) {
-  const cats = Object.entries(CATS).filter(([k]) => !["shop", "market"].includes(k));
+  const cats = Object.entries(CATS).filter(([k, c]) =>
+    !["shop", "market"].includes(k) &&
+    (!c.disabled || k === p.cat)
+  );
   return formDialog(title, `<form class="ncm-form">
     <label>${T("Название")}<input name="name" value="${esc(p.name ?? "")}" placeholder="${T("Схрон Мальстрема")}"></label>
     <label>${T("Категория")}<select name="cat">${cats.map(([k, c]) => `<option value="${k}"${(p.cat ?? "custom") === k ? " selected" : ""}>${c.ru}</option>`).join("")}</select></label>
