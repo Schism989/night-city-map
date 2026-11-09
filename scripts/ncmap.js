@@ -1628,22 +1628,33 @@ const UI = {
     if (this.sel) { this.sel = null; this.renderMarkers(); this.renderPanel(); }
   },
   
+
 async manageCategories() {
   if (!isGM()) return;
 
   const categories = foundry.utils.deepClone(CATS);
 
+  const categoryRow = (id, cat = {}) => `
+    <div class="form-group" data-category-row="${id}"
+      style="display:grid;grid-template-columns:1fr 65px 140px;gap:8px;align-items:center;margin-bottom:10px">
+      <input type="text" data-cat-name="${id}"
+        value="${esc(cat.ru ?? id)}" placeholder="Category name">
+      <input type="color" data-cat-color="${id}"
+        value="${cat.color ?? "#ffffff"}">
+      <input type="text" data-cat-icon="${id}"
+        value="${esc(cat.icon ?? "fa-location-dot")}" placeholder="fa-icon">
+    </div>
+  `;
+
   const content = `
     <div class="ncm-category-manager">
-      ${Object.entries(categories).map(([id, cat]) => `
-        <div class="form-group" style="display:grid;grid-template-columns:1fr 65px 140px;gap:8px;align-items:center;margin-bottom:10px">
-          <input type="text" data-cat-name="${id}" value="${cat.ru ?? id}" placeholder="Category name">
-          <input type="color" data-cat-color="${id}" value="${cat.color ?? "#ffffff"}">
-          <input type="text" data-cat-icon="${id}" value="${cat.icon ?? "fa-location-dot"}" placeholder="fa-icon">
-        </div>
-      `).join("")}
+      ${Object.entries(categories).map(([id, cat]) =>
+        categoryRow(id, cat)
+      ).join("")}
       <hr>
-      <button type="button" data-cat-add><i class="fas fa-plus"></i> Add category</button>
+      <button type="button" data-cat-add>
+        <i class="fas fa-plus"></i> Add category
+      </button>
     </div>
   `;
 
@@ -1662,11 +1673,13 @@ async manageCategories() {
             const color = html.find(`[data-cat-color="${id}"]`).val();
             const icon = html.find(`[data-cat-icon="${id}"]`).val().trim();
 
-            if (name) updated[id] = {
-              ru: name,
-              color,
-              icon
-            };
+            if (name) {
+              updated[id] = {
+                ru: name,
+                color,
+                icon: icon || "fa-location-dot"
+              };
+            }
           });
 
           await save(s => {
@@ -1677,11 +1690,23 @@ async manageCategories() {
           this.render();
         }
       },
-      cancel: { label: "Cancel" }
+      cancel: {
+        label: "Cancel"
+      }
     },
     render: html => {
       html.find("[data-cat-add]").on("click", () => {
-        ui.notifications.info("Adding new categories will be enabled in the next step.");
+        const id = `custom_${rid()}`;
+
+        const row = $(categoryRow(id, {
+          ru: "New Category",
+          color: "#ffffff",
+          icon: "fa-location-dot"
+        }));
+
+        html.find(".ncm-category-manager hr").before(row);
+
+        row.find(`[data-cat-name="${id}"]`).trigger("focus").trigger("select");
       });
     }
   }).render(true);
